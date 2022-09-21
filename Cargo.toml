@@ -1,0 +1,20 @@
+[package]
+name = "gus_bot"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+tokio = { version = "1.21.1", features = ["macros", "signal", "rt-multi-thread"] }
+dotenv = "0.15.0"
+
+[dependencies.serenity]
+version = "0.11"
+features = ["cache", "framework", "standard_framework", "rustls_backend", "model", "utils"]
+
+[[commands]]
+name="commands"
+path="src/commands"
+
+[[utils]]
+name="utils"
+path="src/utils"
