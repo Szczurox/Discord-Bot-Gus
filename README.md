@@ -5,8 +5,8 @@
 
 <div align="center">
 
-[![CodeFactor](https://www.codefactor.io/repository/github/szczurox/discord-bot-gus/badge)] (https://www.codefactor.io/repository/github/szczurox/discord-bot-gus)
-![Lines of code](https://img.shields.io/tokei/lines/github.com/Szczurox/Discord-Bot-Gus) 
+[![CodeFactor](https://www.codefactor.io/repository/github/szczurox/discord-bot-gus/badge)] 
+(https://www.codefactor.io/repository/github/szczurox/discord-bot-gus) ![Lines of code](https://img.shields.io/tokei/lines/github.com/Szczurox/Discord-Bot-Gus) 
 
 </div>
 
