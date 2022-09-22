@@ -11,6 +11,11 @@ dotenv = "0.15.0"
 version = "0.11"
 features = ["cache", "framework", "standard_framework", "rustls_backend", "model", "utils"]
 
+[dependencies.mongodb]
+version = "2.3.0"
+default-features = false
+features = ["async-std-runtime"]
+
 [[commands]]
 name="commands"
 path="src/commands"

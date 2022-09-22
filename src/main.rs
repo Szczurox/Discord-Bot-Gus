@@ -1,3 +1,6 @@
+// All commands and usage are described using comments above each command's function 
+// Using format: command_name [argument] (optional_argument)
+
 mod commands { 
     pub mod ping; 
     pub mod moderation { 
@@ -19,10 +22,12 @@ use serenity::async_trait;
 use serenity::client::bridge::gateway::ShardManager;
 use serenity::framework::standard::macros::group;
 use serenity::framework::StandardFramework;
+use serenity::framework::standard::{ Configuration };
 use serenity::model::event::ResumedEvent;
 use serenity::model::gateway::Ready;
 use serenity::prelude::*;
-use serenity::framework::standard::{ Configuration };
+
+use mongodb::{bson::doc, options::ClientOptions};
 
 use crate::commands::ping::*;
 use crate::commands::moderation::kick::*;
@@ -58,6 +63,30 @@ struct General;
 async fn main() {
     // Load .env file 
     dotenv().ok().expect("Failed to load .env file");
+
+    let connection_string = env::var("MONGODB_CONNECTION_STRING").expect("Expected a token in the environment");
+
+    // Parse onnection string into an options struct
+    let mut client_options =
+        ClientOptions::parse(connection_string)
+            .await.expect("Error parsing connection string");
+        
+    client_options.app_name = Some("GusBot".to_string());
+
+    // Get a handle to the cluster
+    let db_client = mongodb::Client::with_options(client_options).expect("Error getting cluster handle");
+
+    // Ping the server to see if you can connect to the cluster
+    db_client
+        .database("main-db")
+        .run_command(doc! {"ping": 1}, None)
+        .await.expect("Error pinging the database");
+    println!("Connected to mongodb successfully");
+
+    // List the names of the databases in that cluster
+    for db_name in db_client.list_database_names(None, None).await.expect("Error getting databses names") {
+        println!("{}", db_name);
+    }
 
     // Get client token from .env
     let token: String = env::var("DISCORD_TOKEN").expect("Expected a token in the environment");
