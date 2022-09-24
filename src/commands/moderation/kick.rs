@@ -25,7 +25,7 @@ pub async fn kick(ctx: &Context, msg: &Message,  mut args: Args) -> CommandResul
                 let result = msg.guild_id.unwrap().kick(&ctx.http, user).await;
                 // Send message confirming kick if there is no error
                 if !result.is_err() {
-                    msg.channel_id.say(&ctx.http, &format!("Successfully kicked {}", user.mention())).await?;
+                    msg.channel_id.say(&ctx.http, &format!("✅ Successfully kicked {}", user.mention())).await?;
                 } else {
                     missing_permission(msg, ctx, String::from("KICK_MEMBERS_ABOVE")).await;
                 }
@@ -36,7 +36,7 @@ pub async fn kick(ctx: &Context, msg: &Message,  mut args: Args) -> CommandResul
                 let result = msg.guild_id.unwrap().kick_with_reason(&ctx.http, user, &reason).await;
                 // Send message confirming kick if there is no error
                 if !result.is_err() {
-                    msg.channel_id.say(&ctx.http, &format!("Successfully kicked {} for `{}`", user.mention(), &reason)).await?;
+                    msg.channel_id.say(&ctx.http, &format!("✅ Successfully kicked {} for `{}`", user.mention(), &reason)).await?;
                 } else {
                     missing_permission(msg, ctx, String::from("KICK_MEMBERS_ABOVE")).await;
                 }

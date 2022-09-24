@@ -25,7 +25,7 @@ pub async fn ban(ctx: &Context, msg: &Message,  mut args: Args) -> CommandResult
                 let result = msg.guild_id.unwrap().ban(&ctx.http, user, 0).await;
                 // Send message confirming ban if there is no error
                 if !result.is_err() {
-                    msg.channel_id.say(&ctx.http, &format!("Banned {}", user.mention())).await?;
+                    msg.channel_id.say(&ctx.http, &format!("✅ Successfully banned {}", user.mention())).await?;
                 } else {
                     missing_permission(msg, ctx, String::from("BAN_MEMBERS_ABOVE")).await;
                 }
@@ -36,7 +36,7 @@ pub async fn ban(ctx: &Context, msg: &Message,  mut args: Args) -> CommandResult
                 let result = msg.guild_id.unwrap().ban_with_reason(&ctx.http, user, 0, &reason).await;
                 // Send message confirming ban if there is no error
                 if !result.is_err() {
-                    msg.channel_id.say(&ctx.http, &format!("Banned {}\nReason: {}", user.mention(), &reason)).await?;
+                    msg.channel_id.say(&ctx.http, &format!("✅ Successfully banned {}\nReason: {}", user.mention(), &reason)).await?;
                 } else {
                     missing_permission(msg, ctx, String::from("BAN_MEMBERS_ABOVE")).await;
                 }

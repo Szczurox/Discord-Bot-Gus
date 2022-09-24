@@ -1,22 +1,23 @@
 // All commands and usage are described using comments above each command's function 
-// Using format: command_name [argument] (optional_argument)
+// Using format: command_name [argument <argument_syntax>] (optional_argument)
 
 mod commands { 
     pub mod ping; 
     pub mod moderation { 
         pub mod kick; 
         pub mod ban; 
+        pub mod warn; 
     } 
 }
 
 mod utils { 
     pub mod erorrs; 
+    pub mod mongo;
 }
 
-use std::env;
-use std::sync::Arc;
+mod constants;
 
-use dotenv::dotenv;
+use std::sync::Arc;
 
 use serenity::async_trait;
 use serenity::client::bridge::gateway::ShardManager;
@@ -26,12 +27,18 @@ use serenity::framework::standard::{ Configuration };
 use serenity::model::event::ResumedEvent;
 use serenity::model::gateway::Ready;
 use serenity::prelude::*;
+use shuttle_service::error::CustomError;
+use shuttle_service::SecretStore;
+use sqlx::PgPool;
 
-use mongodb::{bson::doc, options::ClientOptions};
+use mongodb::{bson::doc};
 
 use crate::commands::ping::*;
 use crate::commands::moderation::kick::*;
 use crate::commands::moderation::ban::*;
+use crate::commands::moderation::warn::*;
+
+use crate::utils::mongo::{init_mongo_client, get_mongo_db};
 
 pub struct ShardManagerContainer;
 
@@ -55,41 +62,31 @@ impl EventHandler for Handler {
 
 // Group for client commands
 #[group]
-#[commands(ping, kick, ban)]
+#[commands(ping, kick, ban, warn)]
 struct General;
 
 // Main client function
-#[tokio::main]
-async fn main() {
-    // Load .env file 
-    dotenv().ok().expect("Failed to load .env file");
+#[shuttle_service::main]
+async fn serenity(#[shared::Postgres] pool: PgPool) -> shuttle_service::ShuttleSerenity {
+    // Get connection string from 'Secrets.toml'
+    let connection_string: String = pool
+    .get_secret("MONGODB_CONNECTION_STRING")
+    .await
+    .map_err(CustomError::new)?;
+    
+    init_mongo_client(connection_string).await;
 
-    let connection_string = env::var("MONGODB_CONNECTION_STRING").expect("Expected a token in the environment");
-
-    // Parse onnection string into an options struct
-    let mut client_options =
-        ClientOptions::parse(connection_string)
-            .await.expect("Error parsing connection string");
-        
-    client_options.app_name = Some("GusBot".to_string());
-
-    // Get a handle to the cluster
-    let db_client = mongodb::Client::with_options(client_options).expect("Error getting cluster handle");
+    let db = get_mongo_db().unwrap();
 
     // Ping the server to see if you can connect to the cluster
-    db_client
-        .database("main-db")
-        .run_command(doc! {"ping": 1}, None)
-        .await.expect("Error pinging the database");
+    db.run_command(doc! {"ping": 1}, None).await.expect("Error pinging the database");
     println!("Connected to mongodb successfully");
 
-    // List the names of the databases in that cluster
-    for db_name in db_client.list_database_names(None, None).await.expect("Error getting databses names") {
-        println!("{}", db_name);
-    }
-
-    // Get client token from .env
-    let token: String = env::var("DISCORD_TOKEN").expect("Expected a token in the environment");
+    // Get client token from 'Secrets.toml'
+    let token = pool
+        .get_secret("DISCORD_TOKEN")
+        .await
+        .map_err(CustomError::new)?;
 
     // Set client info
     let framework: StandardFramework = StandardFramework::new()
@@ -120,4 +117,6 @@ async fn main() {
     if let Err(why) = client.start().await {
         println!("An error occurred while running the client: {:?}", why);
     }
+    
+    Ok(client)
 }

@@ -1,20 +1,38 @@
 [package]
 name = "gus_bot"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2021"
+authors = ["Szczurox <plszczurox@gmail.com>"]
+description = "Bot for discord.gg/walterwhite guild"
+
+[lib]
 
 [dependencies]
-tokio = { version = "1.21.1", features = ["macros", "signal", "rt-multi-thread"] }
 dotenv = "0.15.0"
+lazy_static = "1.4.0"
+log = "0.4.17"
+
+[dependencies.tokio]
+version = "1.21.1"
+features = ["macros", "signal", "rt-multi-thread"]
 
 [dependencies.serenity]
 version = "0.11"
+default-features = false
 features = ["cache", "framework", "standard_framework", "rustls_backend", "model", "utils"]
 
 [dependencies.mongodb]
 version = "2.3.0"
 default-features = false
 features = ["async-std-runtime"]
+
+[dependencies.shuttle-service]
+version = "0.5.2"
+features = ["bot-serenity", "sqlx-postgres", "secrets"]
+
+[dependencies.sqlx]
+version = "0.6.2"
+features = ["runtime-tokio-native-tls", "postgres"]
 
 [[commands]]
 name="commands"
