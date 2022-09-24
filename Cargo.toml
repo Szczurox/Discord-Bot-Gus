@@ -33,11 +33,3 @@ features = ["bot-serenity", "sqlx-postgres", "secrets"]
 [dependencies.sqlx]
 version = "0.6.2"
 features = ["runtime-tokio-native-tls", "postgres"]
-
-[[commands]]
-name="commands"
-path="src/commands"
-
-[[utils]]
-name="utils"
-path="src/utils"

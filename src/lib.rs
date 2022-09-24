@@ -117,6 +117,6 @@ async fn serenity(#[shared::Postgres] pool: PgPool) -> shuttle_service::ShuttleS
     if let Err(why) = client.start().await {
         println!("An error occurred while running the client: {:?}", why);
     }
-    
+
     Ok(client)
 }
