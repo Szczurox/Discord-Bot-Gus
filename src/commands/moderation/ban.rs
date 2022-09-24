@@ -3,7 +3,10 @@ use serenity::framework::standard::{Args, CommandResult};
 use serenity::model::prelude::*;
 use serenity::prelude::*;
 
-use crate::utils::erorrs::{missing_argument, missing_permission};
+use crate::utils::errors::{missing_argument, missing_permission};
+use crate::utils::mongo::{add_infraction};
+use crate::utils::serenity::{get_discord_tag};
+use crate::utils::time::{get_time};
 
 // Ban a member from a guild
 // Usage: ban [@member / ID] (reason)
@@ -25,6 +28,13 @@ pub async fn ban(ctx: &Context, msg: &Message,  mut args: Args) -> CommandResult
                 let result = msg.guild_id.unwrap().ban(&ctx.http, user, 0).await;
                 // Send message confirming ban if there is no error
                 if !result.is_err() {
+                    // Get current time in unix time
+                    let time_stamp: u32 = get_time();
+                    // Create issuing member username + tag string
+                    let issued_by: String = get_discord_tag(&msg.author);
+                    // Add the ban to the infractions log
+                    add_infraction(&user.to_string(), &String::from("ban"), &String::from("reason not provided"), &issued_by, &String::from("never"), &time_stamp).await;
+                    // Send a message confirming the ban
                     msg.channel_id.say(&ctx.http, &format!("✅ Successfully banned {}", user.mention())).await?;
                 } else {
                     missing_permission(msg, ctx, String::from("BAN_MEMBERS_ABOVE")).await;
@@ -34,8 +44,15 @@ pub async fn ban(ctx: &Context, msg: &Message,  mut args: Args) -> CommandResult
                 let reason = args.single_quoted::<String>().unwrap();
                 // Ban member from the guild with a reason
                 let result = msg.guild_id.unwrap().ban_with_reason(&ctx.http, user, 0, &reason).await;
-                // Send message confirming ban if there is no error
+                // Send message confirming ban if there is no error and add ban to infractions log
                 if !result.is_err() {
+                    // Get current time in unix time
+                    let time_stamp: u32 = get_time();
+                    // Create issuing member username + tag string
+                    let issued_by: String = get_discord_tag(&msg.author);
+                    // Add the ban to the infractions log
+                    add_infraction(&user.to_string(), &String::from("ban"), &reason, &issued_by, &String::from("never"), &time_stamp).await;
+                    // Send a message confirming the ban
                     msg.channel_id.say(&ctx.http, &format!("✅ Successfully banned {}\nReason: {}", user.mention(), &reason)).await?;
                 } else {
                     missing_permission(msg, ctx, String::from("BAN_MEMBERS_ABOVE")).await;

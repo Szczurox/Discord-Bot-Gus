@@ -11,11 +11,15 @@ mod commands {
 }
 
 mod utils { 
-    pub mod erorrs; 
+    pub mod errors; 
     pub mod mongo;
+    pub mod serenity;
+    pub mod time;
 }
 
-mod constants;
+mod constants {
+    pub mod time;
+}
 
 use std::sync::Arc;
 

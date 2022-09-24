@@ -1,14 +1,13 @@
-use std::time::SystemTime;
-use mongodb::{bson::doc};
-
 use serenity::framework::standard::macros::command;
 use serenity::framework::standard::{Args, CommandResult};
 use serenity::model::prelude::*;
 use serenity::prelude::*;
 
-use crate::utils::erorrs::{missing_argument, missing_permission};
-use crate::utils::mongo::{get_mongo_db};
-use crate::constants::DURATION_TIME;
+use crate::utils::errors::{missing_argument, missing_permission};
+use crate::utils::mongo::{add_infraction};
+use crate::utils::serenity::{get_discord_tag};
+use crate::constants::time::DURATION_TIME;
+use crate::utils::time::get_time;
 
 // Warn a member
 // Usage: warn [@member / ID] (expire in <(num)s, (num)m, (num)h, (num)d, (num)mo, (num)y, never>, default: 1 month) [reason] 
@@ -60,42 +59,15 @@ pub async fn warn(ctx: &Context, msg: &Message,  mut args: Args) -> CommandResul
                 let reason: String = args.single_quoted::<String>().unwrap();
 
                 // Get current time in unix time
-                let time_stamp: u32 = match SystemTime::now().duration_since(SystemTime::UNIX_EPOCH) {
-                    Ok(n) => n.as_secs() as u32,
-                    Err(_) => panic!("SystemTime before UNIX EPOCH!"),
-                };
+                let time_stamp: u32 = get_time();
                 
                 // Create issuing member username + tag string
-                let mut issued_by: String = msg.author.name.to_owned();
-                issued_by.push_str("#");
-                // Discriminator is an unsigned int, so 0s at the beginning (if they exist) have to be added manually
-                let discriminator: u16 = msg.author.discriminator;
-                if discriminator < 1000 {
-                    issued_by.push_str("0");
-                }
-                if discriminator < 100 {
-                    issued_by.push_str("0");
-                }
-                if discriminator < 10 {
-                    issued_by.push_str("0");
-                }
-                issued_by.push_str(&discriminator.to_string());
+                let issued_by: String = get_discord_tag(&msg.author);
 
                 // Warn expiration date (current time + warn duration)
                 let expiration: u32 = time_stamp + duration;
                 
-                // Get a handle to the database
-                let db = get_mongo_db().unwrap();
-
-                // Add warn to the database
-                db.collection("infractions").insert_one(doc! {
-                    "offender": &user.to_string(),
-                    "type": "Warn",
-                    "reason": &reason, 
-                    "issued-by": &issued_by, 
-                    "expiring": &expiration, 
-                    "creation-date": &time_stamp, 
-                }, None).await.expect("Error adding the warning");
+                add_infraction(&user.to_string(), &String::from("warn"), &reason, &issued_by, &expiration.to_string(), &time_stamp).await;
 
                 // Send message confirming warn
                 msg.channel_id.say(&ctx.http, &format!("✅ Successfully warned {} for `{}`, expiring on <t:{}:f>", user.mention(), &reason, &expiration)).await?;

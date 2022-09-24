@@ -2,8 +2,9 @@
 name = "gus_bot"
 version = "0.1.1"
 edition = "2021"
-authors = ["Szczurox <plszczurox@gmail.com>"]
 description = "Bot for discord.gg/walterwhite guild"
+repository = "https://github.com/Szczurox/Discord-Bot-Gus/"
+license-file = "LICENSE"
 
 [lib]
 
