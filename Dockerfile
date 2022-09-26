@@ -1,3 +1,3 @@
-FROM rust:1.59.0
+FROM rust:latest
 RUN rustup default stable
 RUN cargo install cargo-shuttle

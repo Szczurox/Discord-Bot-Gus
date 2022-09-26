@@ -1,11 +1,11 @@
 use serenity::model::prelude::*;
 
 // Create member username + # + discriminator string
-pub fn get_discord_tag(author: &User) -> String {
-    let mut discord_tag: String = author.name.to_owned();
+pub fn get_discord_tag(user: &User) -> String {
+    let mut discord_tag: String = user.name.to_owned();
     discord_tag.push_str("#");
     // Discriminator is an unsigned int, so 0s at the beginning (if they exist) have to be added manually
-    let discriminator: u16 = author.discriminator;
+    let discriminator: u16 = user.discriminator;
     if discriminator < 1000 {
         discord_tag.push_str("0");
     }

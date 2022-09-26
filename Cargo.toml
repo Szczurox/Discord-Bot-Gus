@@ -1,6 +1,6 @@
 [package]
 name = "gus_bot"
-version = "0.1.1"
+version = "0.1.4"
 edition = "2021"
 description = "Bot for discord.gg/walterwhite guild"
 repository = "https://github.com/Szczurox/Discord-Bot-Gus/"
@@ -12,6 +12,7 @@ license-file = "LICENSE"
 dotenv = "0.15.0"
 lazy_static = "1.4.0"
 log = "0.4.17"
+serde = "1.0.145"
 
 [dependencies.tokio]
 version = "1.21.1"

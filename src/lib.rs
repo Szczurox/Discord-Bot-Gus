@@ -6,7 +6,10 @@ mod commands {
     pub mod moderation { 
         pub mod kick; 
         pub mod ban; 
+        pub mod unban;
         pub mod warn; 
+        pub mod search;
+        pub mod removewarn;
     } 
 }
 
@@ -19,6 +22,8 @@ mod utils {
 
 mod constants {
     pub mod time;
+    pub mod permissions;
+    pub mod infractions;
 }
 
 use std::sync::Arc;
@@ -40,7 +45,10 @@ use mongodb::{bson::doc};
 use crate::commands::ping::*;
 use crate::commands::moderation::kick::*;
 use crate::commands::moderation::ban::*;
+use crate::commands::moderation::unban::*;
 use crate::commands::moderation::warn::*;
+use crate::commands::moderation::search::*;
+use crate::commands::moderation::removewarn::*;
 
 use crate::utils::mongo::{init_mongo_client, get_mongo_db};
 
@@ -66,7 +74,7 @@ impl EventHandler for Handler {
 
 // Group for client commands
 #[group]
-#[commands(ping, kick, ban, warn)]
+#[commands(ping, kick, ban, unban, warn, search, removewarn)]
 struct General;
 
 // Main client function

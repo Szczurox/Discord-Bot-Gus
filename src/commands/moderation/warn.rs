@@ -3,11 +3,13 @@ use serenity::framework::standard::{Args, CommandResult};
 use serenity::model::prelude::*;
 use serenity::prelude::*;
 
-use crate::utils::errors::{missing_argument, missing_permission};
+use crate::constants::infractions::INFRACTION_WARN;
+use crate::utils::errors::{missing_argument, missing_permission, wrong_argument};
 use crate::utils::mongo::{add_infraction};
 use crate::utils::serenity::{get_discord_tag};
-use crate::constants::time::DURATION_TIME;
 use crate::utils::time::get_time;
+use crate::constants::time::DURATION_TIME;
+use crate::constants::permissions::PERMISSION_WARN;
 
 // Warn a member
 // Usage: warn [@member / ID] (expire in <(num)s, (num)m, (num)h, (num)d, (num)mo, (num)y, never>, default: 1 month) [reason] 
@@ -22,8 +24,14 @@ pub async fn warn(ctx: &Context, msg: &Message,  mut args: Args) -> CommandResul
             missing_argument(msg, ctx, String::from("MEMBER")).await;
         } 
         else {
-            // Get user from arguments
-            let user: UserId = args.single::<UserId>()?;
+            // Get user from arguments and throw an error if argument is missing
+            let user_result = args.single::<UserId>();
+            if user_result.is_err() {
+                wrong_argument(msg, ctx, String::from("MEMBER")).await;
+                return Ok(())
+            }
+            let user: UserId = user_result.unwrap();
+
             if args.is_empty() {
                 missing_argument(msg, ctx, String::from("REASON")).await;
             }
@@ -56,7 +64,7 @@ pub async fn warn(ctx: &Context, msg: &Message,  mut args: Args) -> CommandResul
                 }
 
                 // Get warn reason from arguments
-                let reason: String = args.single_quoted::<String>().unwrap();
+                let reason: String = String::from(args.rest());
 
                 // Get current time in unix time
                 let time_stamp: u32 = get_time();
@@ -67,14 +75,14 @@ pub async fn warn(ctx: &Context, msg: &Message,  mut args: Args) -> CommandResul
                 // Warn expiration date (current time + warn duration)
                 let expiration: u32 = time_stamp + duration;
                 
-                add_infraction(&user.to_string(), &String::from("warn"), &reason, &issued_by, &expiration.to_string(), &time_stamp).await;
+                add_infraction(&user.to_string(), &String::from(&String::from(INFRACTION_WARN)), &reason, &issued_by, &expiration.to_string(), &time_stamp).await;
 
                 // Send message confirming warn
                 msg.channel_id.say(&ctx.http, &format!("✅ Successfully warned {} for `{}`, expiring on <t:{}:f>", user.mention(), &reason, &expiration)).await?;
             }
         }
     } else {
-        missing_permission(msg, ctx, String::from("KICK_MEMBERS")).await;
+        missing_permission(msg, ctx, String::from(PERMISSION_WARN)).await;
     }
 
     Ok(())
