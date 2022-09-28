@@ -28,3 +28,5 @@ lazy_static! {
         m
     };
 }
+
+pub static DURATION_TIME_NEVER: &str = "Never";

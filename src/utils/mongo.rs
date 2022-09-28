@@ -1,6 +1,6 @@
-use mongodb::{options::ClientOptions, bson::{doc, oid::ObjectId}};
+use mongodb::{options::{ClientOptions}, bson::{doc, oid::ObjectId, Document}, Cursor};
 
-use crate::constants::infractions::Infraction;
+use crate::constants::infractions::{Infraction, InfractionField};
 
 static mut MONGO_CLIENT: Option<mongodb::Client> = None;
 
@@ -30,12 +30,12 @@ pub async fn add_infraction(user_id: &String, infraction_type: &String, reason: 
 
     // Add infraction to the database
     db.collection("infractions").insert_one(doc! {
-        "offender": &user_id,
-        "infraction_type": &infraction_type,
-        "reason": &reason, 
-        "issued_by": &issued_by, 
-        "expiration_date": &expiration_date,
-        "creation_date": &creation_date,
+        InfractionField::Offender.as_str(): &user_id,
+        InfractionField::InfractionType.as_str(): &infraction_type,
+        InfractionField::Reason.as_str(): &reason, 
+        InfractionField::IssuedBy.as_str(): &issued_by, 
+        InfractionField::ExpirationDate.as_str(): &expiration_date,
+        InfractionField::CreationDate.as_str(): &creation_date,
     }, None).await.expect("Error adding the ban to the infractions log");
 }
 
@@ -48,8 +48,34 @@ pub async fn remove_infraction(id: ObjectId) {
     // Remove infraction to the database
     collection.delete_one(
         doc! {
-            "_id": id
+            InfractionField::ID.as_str(): id
         }, 
         None,
     ).await.expect("Error trying to delete element from the database");
+}
+
+// Gets multiple infractions from the database
+pub async fn get_infractions(filter: Document) -> Cursor<Infraction> {
+    // Get a handle to the database
+    let db = get_mongo_db().unwrap();
+
+    let collection = db.collection::<Infraction>("infractions");
+
+    collection.find(
+        filter,
+        None,
+    ).await.expect("Error trying to delete element from the database")
+}
+
+// Gets one infraction from the database
+pub async fn get_infraction(filter: Document) -> Option<Infraction> {
+    // Get a handle to the database
+    let db = get_mongo_db().unwrap();
+
+    let collection = db.collection::<Infraction>("infractions");
+
+    collection.find_one(
+        filter,
+        None,
+    ).await.expect("Error trying to delete element from the database")
 }

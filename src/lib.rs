@@ -7,6 +7,8 @@ mod commands {
         pub mod kick; 
         pub mod ban; 
         pub mod unban;
+        pub mod mute; 
+        pub mod unmute;
         pub mod warn; 
         pub mod search;
         pub mod removewarn;
@@ -24,6 +26,7 @@ mod constants {
     pub mod time;
     pub mod permissions;
     pub mod infractions;
+    pub mod config;
 }
 
 use std::sync::Arc;
@@ -40,12 +43,14 @@ use shuttle_service::error::CustomError;
 use shuttle_service::SecretStore;
 use sqlx::PgPool;
 
-use mongodb::{bson::doc};
+use mongodb::bson::doc;
 
 use crate::commands::ping::*;
 use crate::commands::moderation::kick::*;
 use crate::commands::moderation::ban::*;
 use crate::commands::moderation::unban::*;
+use crate::commands::moderation::mute::*;
+use crate::commands::moderation::unmute::*;
 use crate::commands::moderation::warn::*;
 use crate::commands::moderation::search::*;
 use crate::commands::moderation::removewarn::*;
@@ -74,7 +79,7 @@ impl EventHandler for Handler {
 
 // Group for client commands
 #[group]
-#[commands(ping, kick, ban, unban, warn, search, removewarn)]
+#[commands(ping, kick, ban, unban, mute, unmute, warn, search, removewarn)]
 struct General;
 
 // Main client function
