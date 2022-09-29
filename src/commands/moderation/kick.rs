@@ -4,9 +4,8 @@ use serenity::model::prelude::*;
 use serenity::prelude::*;
 
 use crate::constants::infractions::INFRACTION_KICK;
-use crate::constants::time::DURATION_TIME_NEVER;
 use crate::utils::errors::{missing_argument, missing_permission, wrong_argument};
-use crate::utils::mongo::{add_infraction};
+use crate::utils::infractions::{add_infraction};
 use crate::utils::serenity::{get_discord_tag};
 use crate::utils::time::{get_time};
 
@@ -48,7 +47,7 @@ pub async fn kick(ctx: &Context, msg: &Message,  mut args: Args) -> CommandResul
                 let time_stamp: u32 = get_time();
                 let issued_by: String = get_discord_tag(&msg.author);
                 add_infraction(&user.to_string(), &String::from(INFRACTION_KICK), 
-                                &reason, &issued_by, &String::from(DURATION_TIME_NEVER), &time_stamp).await;
+                                &reason, &issued_by, &None, &time_stamp).await;
                 // Send a message confirming the kick
                 if &reason[..] == "reason not provided" {
                     msg.channel_id.say(&ctx.http, &format!("✅ Successfully kicked {}", user.mention())).await?;

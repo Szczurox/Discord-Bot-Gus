@@ -20,6 +20,7 @@ mod utils {
     pub mod mongo;
     pub mod serenity;
     pub mod time;
+    pub mod infractions;
 }
 
 mod constants {
@@ -39,8 +40,10 @@ use serenity::framework::standard::{ Configuration };
 use serenity::model::event::ResumedEvent;
 use serenity::model::gateway::Ready;
 use serenity::prelude::*;
+
 use shuttle_service::error::CustomError;
 use shuttle_service::SecretStore;
+
 use sqlx::PgPool;
 
 use mongodb::bson::doc;
@@ -56,6 +59,7 @@ use crate::commands::moderation::search::*;
 use crate::commands::moderation::removewarn::*;
 
 use crate::utils::mongo::{init_mongo_client, get_mongo_db};
+use crate::utils::infractions::{infraction_expiration_coroutine};
 
 pub struct ShardManagerContainer;
 
@@ -68,8 +72,12 @@ struct Handler;
 // Handler for client events
 #[async_trait]
 impl EventHandler for Handler {
-    async fn ready(&self, _: Context, ready: Ready) {
+    async fn ready(&self, ctx: Context, ready: Ready) {
         println!("Connected as {}", ready.user.name);
+        
+        tokio::spawn(async move {
+            infraction_expiration_coroutine(&ctx.http).await;
+        });
     }
 
     async fn resume(&self, _: Context, _: ResumedEvent) {

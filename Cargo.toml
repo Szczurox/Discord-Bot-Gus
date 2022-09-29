@@ -13,6 +13,7 @@ dotenv = "0.15.0"
 lazy_static = "1.4.0"
 log = "0.4.17"
 serde = "1.0.145"
+ticker = "0.1.1"
 
 [dependencies.tokio]
 version = "1.21.1"

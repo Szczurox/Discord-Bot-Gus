@@ -68,18 +68,18 @@ pub async fn search(ctx: &Context, msg: &Message,  mut args: Args) -> CommandRes
     });
     // Traverse through searched user's infraction log and get all infraction's 
     while infraction_log.advance().await? {
-        let mut infraction: Infraction = infraction_log.deserialize_current()?;
-        let infraction_expired_check = infraction.check_expiration().await;
-        if !infraction_expired_check {
-            let mut infraction_expiration_date = String::from(infraction.expiration_date);
-            if infraction_expiration_date != "Never" {
-                infraction_expiration_date = format!("<t:{}:f>", infraction_expiration_date)
-            }
-            // Add infractions as embed fields
-            embed.field(format!("**{}**", infraction.infraction_type), 
-                format!("**Reason:** `{}`\n**Issued By:** {}\n**Expiring:** {}\n**Created:** <t:{}:f>\n**ID:** {}", 
-                        infraction.reason, infraction.issued_by, infraction_expiration_date, infraction.creation_date, infraction._id), true);
+        let infraction: Infraction = infraction_log.deserialize_current()?;
+        let infraction_expiration_string;
+        if infraction.expiration_date == None {
+            infraction_expiration_string = String::from("Never");
         }
+        else {
+            infraction_expiration_string = format!("<t:{}:f>", infraction.expiration_date.unwrap().to_string())
+        }
+        // Add infractions as embed fields
+        embed.field(format!("**{}**", infraction.infraction_type), 
+            format!("**Reason:** `{}`\n**Issued By:** {}\n**Expiring:** {}\n**Created:** <t:{}:f>\n**ID:** {}", 
+                    infraction.reason, infraction.issued_by, infraction_expiration_string, infraction.creation_date, infraction._id), true);
     }
 
     // Send the infraction log embed

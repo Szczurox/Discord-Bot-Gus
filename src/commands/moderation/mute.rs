@@ -1,18 +1,14 @@
-use std::time::Duration;
-
-use mongodb::bson::doc;
 use serenity::framework::standard::macros::command;
 use serenity::framework::standard::{Args, CommandResult};
 use serenity::model::prelude::*;
 use serenity::prelude::*;
-use tokio::time::sleep;
 
 use crate::constants::config::{MUTE_ROLE};
-use crate::constants::infractions::{INFRACTION_MUTE, InfractionField};
+use crate::constants::infractions::{INFRACTION_MUTE};
 use crate::utils::errors::{missing_argument, missing_permission, wrong_argument};
-use crate::constants::time::{DURATION_TIME, DURATION_TIME_NEVER};
+use crate::constants::time::{DURATION_TIME};
 use crate::constants::permissions::PERMISSION_MUTE;
-use crate::utils::mongo::{add_infraction, get_infraction, remove_infraction};
+use crate::utils::infractions::{add_infraction};
 use crate::utils::serenity::get_discord_tag;
 use crate::utils::time::get_time;
 
@@ -41,7 +37,7 @@ pub async fn mute(ctx: &Context, msg: &Message,  mut args: Args) -> CommandResul
             let duration_string: String = args.single::<String>()?;
             // Get time unit (days, months, years, etc.)
             let time_unit: String = duration_string.chars().filter(|c| !c.is_digit(10)).collect();
-            let mut duration: String = String::from(DURATION_TIME_NEVER);
+            let mut duration: Option<u32> = None;
 
             // Check if the duration is specified
             if DURATION_TIME.contains_key(&time_unit[..]) {
@@ -49,7 +45,7 @@ pub async fn mute(ctx: &Context, msg: &Message,  mut args: Args) -> CommandResul
                 let duration_length_string: String = duration_string.chars().filter(|c| c.is_digit(10)).collect();
                 let duration_length : u32 = duration_length_string.parse::<u32>().unwrap();
 
-                duration = (DURATION_TIME.get(&time_unit[..]).unwrap() * duration_length).to_string();
+                duration = Some(DURATION_TIME.get(&time_unit[..]).unwrap() * duration_length);
             }
             else {
                 // Rewing argument if the duration is not specified
@@ -67,12 +63,12 @@ pub async fn mute(ctx: &Context, msg: &Message,  mut args: Args) -> CommandResul
         
             let time_stamp: u32 = get_time();
             let issued_by: String = get_discord_tag(&msg.author);
-            let expiration: String;
-            if duration != String::from(DURATION_TIME_NEVER) {
+            let expiration: Option<u32>;
+            if duration != None {
                 // Mute end (current time + warn duration)
-                expiration = (time_stamp + &duration.parse::<u32>()?).to_string();
+                expiration = Some(time_stamp + &duration.unwrap());
             } else {
-                expiration = duration.clone();
+                expiration = None;
             }
 
             add_infraction(&user.to_string(), &String::from(INFRACTION_MUTE), &reason, &issued_by, &expiration, &time_stamp).await;
@@ -81,22 +77,8 @@ pub async fn mute(ctx: &Context, msg: &Message,  mut args: Args) -> CommandResul
             let mut member = msg.guild_id.unwrap().member(ctx, user).await?;
             member.add_role(&ctx.http, MUTE_ROLE).await?;
 
-            if duration != String::from(DURATION_TIME_NEVER) {
-                msg.channel_id.say(&ctx.http, &format!("✅ Successfully muted {} for `{}`, expiring on <t:{}:f>", user.mention(), &reason, &expiration)).await?;
-
-                sleep(Duration::from_secs(duration.parse::<u64>()?)).await;
-                
-                // Remove mute from the infraction log
-                let infraction = get_infraction(doc! { 
-                    InfractionField::Offender.as_str(): &user.to_string(),
-                    InfractionField::IssuedBy.as_str(): &issued_by, 
-                    InfractionField::InfractionType.as_str(): &String::from(INFRACTION_MUTE), 
-                    InfractionField::CreationDate.as_str(): &time_stamp 
-                }).await.unwrap();
-
-                remove_infraction(infraction._id).await;
-
-                member.remove_role(&ctx.http, MUTE_ROLE).await?;
+            if duration != None {
+                msg.channel_id.say(&ctx.http, &format!("✅ Successfully muted {} for `{}`, expiring on <t:{}:f>", user.mention(), &reason, &expiration.unwrap())).await?;
             }
             else {
                 msg.channel_id.say(&ctx.http, &format!("✅ Successfully muted {} for `{}`, lasting `Forever`", user.mention(), &reason)).await?;

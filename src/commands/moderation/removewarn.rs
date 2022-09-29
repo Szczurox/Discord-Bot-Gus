@@ -7,7 +7,7 @@ use mongodb::bson::oid::ObjectId;
 
 use crate::utils::errors::{missing_argument, missing_permission, wrong_argument};
 use crate::constants::permissions::PERMISSION_WARN;
-use crate::utils::mongo::remove_infraction;
+use crate::utils::infractions::remove_infraction;
 
 // Remove an infraction from the infraction log
 // Usage: removewarn [infraction ID]

@@ -4,9 +4,9 @@ use serenity::model::prelude::*;
 use serenity::prelude::*;
 
 use crate::constants::infractions::INFRACTION_BAN;
-use crate::constants::time::{DURATION_TIME_NEVER};
+use crate::constants::time::DURATION_TIME;
 use crate::utils::errors::{missing_argument, missing_permission, wrong_argument};
-use crate::utils::mongo::{add_infraction};
+use crate::utils::infractions::{add_infraction};
 use crate::utils::serenity::{get_discord_tag};
 use crate::utils::time::{get_time};
 use crate::constants::permissions::PERMISSION_BAN;
@@ -31,6 +31,25 @@ pub async fn ban(ctx: &Context, msg: &Message,  mut args: Args) -> CommandResult
             }
             let user: UserId = user_result.unwrap();
             
+            // Get mute duration time from arguments
+            let duration_string: String = args.single::<String>()?;
+            // Get time unit (days, months, years, etc.)
+            let time_unit: String = duration_string.chars().filter(|c| !c.is_digit(10)).collect();
+            let mut duration: Option<u32> = None;
+
+            // Check if the duration is specified
+            if DURATION_TIME.contains_key(&time_unit[..]) {
+                // Get number of time units from the mute duration time string
+                let duration_length_string: String = duration_string.chars().filter(|c| c.is_digit(10)).collect();
+                let duration_length : u32 = duration_length_string.parse::<u32>().unwrap();
+
+                duration = Some(DURATION_TIME.get(&time_unit[..]).unwrap() * duration_length);
+            }
+            else {
+                // Rewing argument if the duration is not specified
+                args.rewind();
+            }
+
             let reason: String;
             // Check if there is an optional argument "reason" 
             if args.is_empty() {
@@ -40,14 +59,24 @@ pub async fn ban(ctx: &Context, msg: &Message,  mut args: Args) -> CommandResult
                 reason = String::from(args.rest());
             }
 
+            let time_stamp: u32 = get_time();
+            let issued_by: String = get_discord_tag(&msg.author);
+            let expiration: Option<u32>;
+            if duration != None {
+                // Mute end (current time + warn duration)
+                expiration = Some(time_stamp + &duration.unwrap());
+            } else {
+                expiration = None;
+            }
+
+
             // Ban a member from the guild
             let result = msg.guild_id.unwrap().ban_with_reason(&ctx.http, user, 0, &reason).await;
             if !result.is_err() {
                 // Add the ban to the infractions log
                 let time_stamp: u32 = get_time();
                 let issued_by: String = get_discord_tag(&msg.author);
-                add_infraction(&user.to_string(), &String::from(INFRACTION_BAN), 
-                                &reason, &issued_by, &String::from(DURATION_TIME_NEVER), &time_stamp).await;
+                add_infraction(&user.to_string(), &String::from(INFRACTION_BAN), &reason, &issued_by, &expiration, &time_stamp).await;
                 // Send a message confirming the ban
                 if &reason[..] == "reason not provided" {
                     msg.channel_id.say(&ctx.http, &format!("✅ Successfully banned {}", user.mention())).await?;

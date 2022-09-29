@@ -1,8 +1,6 @@
 use mongodb::bson::oid::ObjectId;
 use serde::Deserialize;
 
-use crate::utils::{time::get_time, mongo::remove_infraction};
-
 // Infraction log element
 #[derive(Debug, Deserialize, Clone)]
 pub struct Infraction {
@@ -11,19 +9,8 @@ pub struct Infraction {
     pub infraction_type: String,
     pub reason: String,
     pub issued_by: String,
-    pub expiration_date: String,
+    pub expiration_date: Option<u32>,
     pub creation_date: u32,
-}
-
-impl Infraction {
-    pub async fn check_expiration(&mut self) -> bool {
-        // If expiration date already passed
-        if self.expiration_date != "Never" && self.expiration_date.parse::<u32>().expect("Parsing error in check_expiration") < get_time() {
-            remove_infraction(self._id).await;
-            return true;
-        }
-        return false;
-    }
 }
 
 pub static INFRACTION_BAN: &str = "BAN";

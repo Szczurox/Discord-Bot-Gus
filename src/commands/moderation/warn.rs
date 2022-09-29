@@ -6,7 +6,7 @@ use serenity::prelude::*;
 use crate::constants::config::DEFAULT_WARN_EXPIRATION;
 use crate::constants::infractions::INFRACTION_WARN;
 use crate::utils::errors::{missing_argument, missing_permission, wrong_argument};
-use crate::utils::mongo::{add_infraction};
+use crate::utils::infractions::{add_infraction};
 use crate::utils::serenity::{get_discord_tag};
 use crate::utils::time::get_time;
 use crate::constants::time::DURATION_TIME;
@@ -66,13 +66,13 @@ pub async fn warn(ctx: &Context, msg: &Message,  mut args: Args) -> CommandResul
                 let time_stamp: u32 = get_time();
                 let issued_by: String = get_discord_tag(&msg.author);
                 // Warn expiration date (current time + warn duration)
-                let expiration: u32 = time_stamp + duration;
+                let expiration: Option<u32> = Some(time_stamp + duration);
 
                 // Add the warn to the infraction log
-                add_infraction(&user.to_string(), &String::from(INFRACTION_WARN), &reason, &issued_by, &expiration.to_string(), &time_stamp).await;
+                add_infraction(&user.to_string(), &String::from(INFRACTION_WARN), &reason, &issued_by, &expiration, &time_stamp).await;
 
                 // Send a message confirming the warn
-                msg.channel_id.say(&ctx.http, &format!("✅ Successfully warned {} for `{}`, expiring on <t:{}:f>", user.mention(), &reason, &expiration)).await?;
+                msg.channel_id.say(&ctx.http, &format!("✅ Successfully warned {} for `{}`, expiring on <t:{}:f>", user.mention(), &reason, &expiration.unwrap())).await?;
             }
         }
     } else {
