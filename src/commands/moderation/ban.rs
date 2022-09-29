@@ -60,7 +60,6 @@ pub async fn ban(ctx: &Context, msg: &Message,  mut args: Args) -> CommandResult
             }
 
             let time_stamp: u32 = get_time();
-            let issued_by: String = get_discord_tag(&msg.author);
             let expiration: Option<u32>;
             if duration != None {
                 // Mute end (current time + warn duration)
@@ -69,12 +68,10 @@ pub async fn ban(ctx: &Context, msg: &Message,  mut args: Args) -> CommandResult
                 expiration = None;
             }
 
-
             // Ban a member from the guild
             let result = msg.guild_id.unwrap().ban_with_reason(&ctx.http, user, 0, &reason).await;
             if !result.is_err() {
                 // Add the ban to the infractions log
-                let time_stamp: u32 = get_time();
                 let issued_by: String = get_discord_tag(&msg.author);
                 add_infraction(&user.to_string(), &String::from(INFRACTION_BAN), &reason, &issued_by, &expiration, &time_stamp).await;
                 // Send a message confirming the ban
