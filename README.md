@@ -5,7 +5,6 @@
 
 <div align="center">
 ![Lines of code](https://img.shields.io/tokei/lines/github.com/Szczurox/Discord-Bot-Gus)   
-![Discord](https://img.shields.io/discord/946483030413955152)   
 </div>
 
 ### Gus is a Discord moderation (also logging and economy in the future) bot for <a href="https://discord.gg/walterwhite">discord.gg/walterwhite</a> built in Rust using <a href="https://github.com/serenity-rs/serenity">Serenity</a>
