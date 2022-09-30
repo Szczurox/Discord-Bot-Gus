@@ -3,5 +3,7 @@
 </p>
 <h1 align="center" style="font-size:48px"> Gus Bot</h1>
 
+![Lines of code](https://img.shields.io/tokei/lines/github.com/Szczurox/Discord-Bot-Gus)
+
 ### Gus is a Discord moderation (also logging and economy in the future) bot for <a href="https://discord.gg/walterwhite">discord.gg/walterwhite</a> built in Rust using <a href="https://github.com/serenity-rs/serenity">Serenity</a>
 (in development)
