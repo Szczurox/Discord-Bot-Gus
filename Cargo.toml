@@ -1,6 +1,6 @@
 [package]
 name = "gus_bot"
-version = "0.1.4"
+version = "0.2.0"
 edition = "2021"
 description = "Bot for discord.gg/walterwhite guild"
 repository = "https://github.com/Szczurox/Discord-Bot-Gus/"

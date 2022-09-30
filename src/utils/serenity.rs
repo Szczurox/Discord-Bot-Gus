@@ -41,3 +41,8 @@ pub async fn add_role(http: &Arc<Http>, user_id: UserId, role_id: u64) -> Result
     }
     Ok(())
 }
+
+pub async fn check_role(http: &Arc<Http>, user_id: UserId, role_id: u64) -> bool {
+    let member = GuildId::from(GUILD_ID).member(http, user_id).await.unwrap();
+    member.roles.contains(&RoleId::from(role_id))
+}

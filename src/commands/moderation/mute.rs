@@ -1,15 +1,16 @@
+use mongodb::bson::doc;
 use serenity::framework::standard::macros::command;
 use serenity::framework::standard::{Args, CommandResult};
 use serenity::model::prelude::*;
 use serenity::prelude::*;
 
 use crate::constants::config::{MUTE_ROLE};
-use crate::constants::infractions::{INFRACTION_MUTE};
+use crate::constants::infractions::{INFRACTION_MUTE, InfractionField};
 use crate::utils::errors::{missing_argument, missing_permission, wrong_argument};
 use crate::constants::time::{DURATION_TIME};
 use crate::constants::permissions::PERMISSION_MUTE;
-use crate::utils::infractions::{add_infraction};
-use crate::utils::serenity::{get_discord_tag, add_role};
+use crate::utils::infractions::{add_infraction, update_set_infraction, infraction_doc};
+use crate::utils::serenity::{get_discord_tag, add_role, check_role};
 use crate::utils::time::get_time;
 
 // Mute a member of a guild
@@ -71,15 +72,32 @@ pub async fn mute(ctx: &Context, msg: &Message,  mut args: Args) -> CommandResul
                 expiration = None;
             }
 
-            add_infraction(&user, &String::from(INFRACTION_MUTE), &reason, &issued_by, &expiration, &time_stamp).await;
+            if !check_role(&ctx.http, user, MUTE_ROLE).await {
+                add_infraction(&user, &String::from(INFRACTION_MUTE), &reason, &issued_by, &expiration, &time_stamp).await;
+                add_role(&ctx.http, user, MUTE_ROLE).await?;
 
-            add_role(&ctx.http, user, MUTE_ROLE).await?;
-
-            if duration != None {
-                msg.channel_id.say(&ctx.http, &format!("✅ Successfully muted {} for `{}`, expiring on <t:{}:f>", user.mention(), &reason, &expiration.unwrap())).await?;
+                if duration != None {
+                    msg.channel_id.say(&ctx.http, &format!("✅ Successfully muted {} for `{}`, expiring on <t:{}:f>", user.mention(), &reason, &expiration.unwrap())).await?;
+                }
+                else {
+                    msg.channel_id.say(&ctx.http, &format!("✅ Successfully muted {} for `{}`, lasting `Forever`", user.mention(), &reason)).await?;
+                }
             }
             else {
-                msg.channel_id.say(&ctx.http, &format!("✅ Successfully muted {} for `{}`, lasting `Forever`", user.mention(), &reason)).await?;
+                update_set_infraction(doc! { 
+                    InfractionField::Offender.as_str(): &user.to_string(),
+                    InfractionField::InfractionType.as_str(): &String::from(INFRACTION_MUTE)
+                }, 
+                infraction_doc(&user, &String::from(INFRACTION_MUTE), &reason, &issued_by, &expiration, &time_stamp)).await;
+
+                if duration != None {
+                    msg.channel_id.say(&ctx.http, 
+                        &format!("✅ Successfully updated {}'s mute, reason: `{}`, expiring on <t:{}:f>", user.mention(), &reason, &expiration.unwrap())).await?;
+                }
+                else {
+                    msg.channel_id.say(&ctx.http, &format!("✅ Successfully updated {}'s mute, reason: {}, lasting `Forever`", user.mention(), &reason)).await?;
+                }
+
             }
         }
     } else {
