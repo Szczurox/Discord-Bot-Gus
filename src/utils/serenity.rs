@@ -24,10 +24,18 @@ pub fn get_discord_tag(user: &User) -> String {
     discord_tag
 }
 
-pub async fn remove_role(http: &Arc<Http>, user_id: u64, role_id: u64) -> Result<(), Error> {
-    let mut member = GuildId::from(GUILD_ID).member(http, UserId::from(user_id)).await.unwrap();
-    println!("roles: {}", &member.roles[0]);
+pub async fn remove_role(http: &Arc<Http>, user_id: UserId, role_id: u64) -> Result<(), Error> {
+    let mut member = GuildId::from(GUILD_ID).member(http, user_id).await.unwrap();
     let result = member.remove_role(&http, role_id).await;
+    if result.is_err() {
+        return Err(result.err().unwrap());
+    }
+    Ok(())
+}
+
+pub async fn add_role(http: &Arc<Http>, user_id: UserId, role_id: u64) -> Result<(), Error> {
+    let mut member = GuildId::from(GUILD_ID).member(http, user_id).await.unwrap();
+    let result = member.add_role(&http, role_id).await;
     if result.is_err() {
         return Err(result.err().unwrap());
     }

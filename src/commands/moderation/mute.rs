@@ -9,7 +9,7 @@ use crate::utils::errors::{missing_argument, missing_permission, wrong_argument}
 use crate::constants::time::{DURATION_TIME};
 use crate::constants::permissions::PERMISSION_MUTE;
 use crate::utils::infractions::{add_infraction};
-use crate::utils::serenity::get_discord_tag;
+use crate::utils::serenity::{get_discord_tag, add_role};
 use crate::utils::time::get_time;
 
 // Mute a member of a guild
@@ -37,7 +37,7 @@ pub async fn mute(ctx: &Context, msg: &Message,  mut args: Args) -> CommandResul
             let duration_string: String = args.single::<String>()?;
             // Get time unit (days, months, years, etc.)
             let time_unit: String = duration_string.chars().filter(|c| !c.is_digit(10)).collect();
-            let mut duration: Option<u32> = None;
+            let duration: Option<u32>;
 
             // Check if the duration is specified
             if DURATION_TIME.contains_key(&time_unit[..]) {
@@ -48,7 +48,7 @@ pub async fn mute(ctx: &Context, msg: &Message,  mut args: Args) -> CommandResul
                 duration = Some(DURATION_TIME.get(&time_unit[..]).unwrap() * duration_length);
             }
             else {
-                // Rewing argument if the duration is not specified
+                duration = None;
                 args.rewind();
             }
             
@@ -71,11 +71,9 @@ pub async fn mute(ctx: &Context, msg: &Message,  mut args: Args) -> CommandResul
                 expiration = None;
             }
 
-            add_infraction(&user.to_string(), &String::from(INFRACTION_MUTE), &reason, &issued_by, &expiration, &time_stamp).await;
+            add_infraction(&user, &String::from(INFRACTION_MUTE), &reason, &issued_by, &expiration, &time_stamp).await;
 
-            // Get a guild member for the user
-            let mut member = msg.guild_id.unwrap().member(ctx, user).await?;
-            member.add_role(&ctx.http, MUTE_ROLE).await?;
+            add_role(&ctx.http, user, MUTE_ROLE).await?;
 
             if duration != None {
                 msg.channel_id.say(&ctx.http, &format!("✅ Successfully muted {} for `{}`, expiring on <t:{}:f>", user.mention(), &reason, &expiration.unwrap())).await?;

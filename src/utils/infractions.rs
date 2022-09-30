@@ -1,27 +1,26 @@
 use std::{sync::Arc, time::Duration};
 
 use mongodb::{bson::{doc, oid::ObjectId, Document}, Cursor};
-use serenity::http::Http;
+use serenity::{http::Http, model::prelude::{UserId, GuildId}};
 use ticker::Ticker;
 
-use crate::{constants::{infractions::{Infraction, InfractionField, INFRACTION_MUTE}, config::MUTE_ROLE}, utils::time::get_time};
+use crate::{constants::{infractions::{Infraction, InfractionField, INFRACTION_MUTE, INFRACTION_BAN, INFRACTION_WARN}, config::{MUTE_ROLE, GUILD_ID}}, utils::time::get_time};
 
 use super::{serenity::remove_role, mongo::get_mongo_db};
 
 
 // Adds infraction to the database
-pub async fn add_infraction(user_id: &String, infraction_type: &String, reason: &String, issued_by: &String, expiration_date: &Option<u32>, creation_date: &u32) {
+pub async fn add_infraction(user_id: &UserId, infraction_type: &String, reason: &String, issued_by: &String, expiration_date: &Option<u32>, creation_date: &u32) {
     // Get a handle to the database
     let db = get_mongo_db().unwrap();
-
     // Add infraction to the database
     db.collection("infractions").insert_one(doc! {
-        InfractionField::Offender.as_str(): &user_id,
-        InfractionField::InfractionType.as_str(): &infraction_type,
-        InfractionField::Reason.as_str(): &reason, 
-        InfractionField::IssuedBy.as_str(): &issued_by, 
-        InfractionField::ExpirationDate.as_str(): &expiration_date,
-        InfractionField::CreationDate.as_str(): &creation_date,
+        InfractionField::Offender.as_str(): user_id.to_string(),
+        InfractionField::InfractionType.as_str(): infraction_type,
+        InfractionField::Reason.as_str(): reason, 
+        InfractionField::IssuedBy.as_str(): issued_by, 
+        InfractionField::ExpirationDate.as_str(): expiration_date,
+        InfractionField::CreationDate.as_str(): creation_date,
     }, None).await.expect("Error adding the ban to the infractions log");
 }
 
@@ -83,7 +82,16 @@ pub async fn infraction_expiration_coroutine(http: &Arc<Http>) {
                 let infraction: Infraction = result.unwrap();
                 if infraction.infraction_type == INFRACTION_MUTE {
                     remove_infraction(infraction._id).await;
-                    remove_role(&http, infraction.offender.parse::<u64>().unwrap(), MUTE_ROLE).await.expect("Error removing mute from member in expiration cooroutine");
+                    remove_role(&http, UserId::from(infraction.offender.parse::<u64>().unwrap()), MUTE_ROLE).await
+                        .expect("Error removing a mute from a member after it expired");
+                }
+                if infraction.infraction_type == INFRACTION_BAN {
+                    remove_infraction(infraction._id).await;
+                    GuildId::from(GUILD_ID).unban(&http, UserId::from(infraction.offender.parse::<u64>().unwrap())).await
+                        .expect("Error unbanning a member after the ban expired");
+                }
+                if infraction.infraction_type == INFRACTION_WARN {
+                    remove_infraction(infraction._id).await;
                 }
             }
         }

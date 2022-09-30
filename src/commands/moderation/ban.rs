@@ -35,7 +35,7 @@ pub async fn ban(ctx: &Context, msg: &Message,  mut args: Args) -> CommandResult
             let duration_string: String = args.single::<String>()?;
             // Get time unit (days, months, years, etc.)
             let time_unit: String = duration_string.chars().filter(|c| !c.is_digit(10)).collect();
-            let mut duration: Option<u32> = None;
+            let duration: Option<u32>;
 
             // Check if the duration is specified
             if DURATION_TIME.contains_key(&time_unit[..]) {
@@ -46,7 +46,7 @@ pub async fn ban(ctx: &Context, msg: &Message,  mut args: Args) -> CommandResult
                 duration = Some(DURATION_TIME.get(&time_unit[..]).unwrap() * duration_length);
             }
             else {
-                // Rewing argument if the duration is not specified
+                duration = None;
                 args.rewind();
             }
 
@@ -73,7 +73,7 @@ pub async fn ban(ctx: &Context, msg: &Message,  mut args: Args) -> CommandResult
             if !result.is_err() {
                 // Add the ban to the infractions log
                 let issued_by: String = get_discord_tag(&msg.author);
-                add_infraction(&user.to_string(), &String::from(INFRACTION_BAN), &reason, &issued_by, &expiration, &time_stamp).await;
+                add_infraction(&user, &String::from(INFRACTION_BAN), &reason, &issued_by, &expiration, &time_stamp).await;
                 // Send a message confirming the ban
                 if &reason[..] == "reason not provided" {
                     msg.channel_id.say(&ctx.http, &format!("✅ Successfully banned {}", user.mention())).await?;

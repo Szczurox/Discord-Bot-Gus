@@ -46,7 +46,7 @@ pub async fn kick(ctx: &Context, msg: &Message,  mut args: Args) -> CommandResul
                 // Add the kick to the infractions log
                 let time_stamp: u32 = get_time();
                 let issued_by: String = get_discord_tag(&msg.author);
-                add_infraction(&user.to_string(), &String::from(INFRACTION_KICK), 
+                add_infraction(&user, &String::from(INFRACTION_KICK), 
                                 &reason, &issued_by, &None, &time_stamp).await;
                 // Send a message confirming the kick
                 if &reason[..] == "reason not provided" {

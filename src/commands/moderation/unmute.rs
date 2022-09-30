@@ -9,6 +9,7 @@ use crate::constants::infractions::{INFRACTION_MUTE, Infraction, InfractionField
 use crate::utils::errors::{missing_argument, missing_permission, wrong_argument};
 use crate::constants::permissions::PERMISSION_MUTE;
 use crate::utils::infractions::{remove_infraction, get_infractions};
+use crate::utils::serenity::remove_role;
 
 // Unmute a member of a guild
 // Usage: unmute [@member / ID]
@@ -41,11 +42,9 @@ pub async fn unmute(ctx: &Context, msg: &Message,  mut args: Args) -> CommandRes
                 remove_infraction(mute._id).await;
             }
 
-            // Get a guild member for the user
-            let mut member = msg.guild_id.unwrap().member(&ctx.http, user).await?;
-            member.remove_role(&ctx.http, MUTE_ROLE).await?;
+            remove_role(&ctx.http, user, MUTE_ROLE).await.expect("Error removing mute from member in expiration cooroutine");
 
-            msg.channel_id.say(&ctx.http, &format!("✅ Successfully unmuted {} for ", user.mention())).await?;
+            msg.channel_id.say(&ctx.http, &format!("✅ Successfully unmuted {}", user.mention())).await?;
         }
     } else {
         missing_permission(msg, ctx, String::from(PERMISSION_MUTE)).await;

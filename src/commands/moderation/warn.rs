@@ -41,8 +41,7 @@ pub async fn warn(ctx: &Context, msg: &Message,  mut args: Args) -> CommandResul
                 let duration_string: String = args.single::<String>()?;
                 // Get time unit (days, months, years, etc.)
                 let time_unit: String = duration_string.chars().filter(|c| !c.is_digit(10)).collect();
-                let mut duration: u32 = DEFAULT_WARN_EXPIRATION;
-
+                let duration: u32;
                 // Check if the duration is specified
                 if DURATION_TIME.contains_key(&time_unit[..]) {
                     // Get number of time units from the warn duration time string
@@ -51,25 +50,25 @@ pub async fn warn(ctx: &Context, msg: &Message,  mut args: Args) -> CommandResul
                     duration = DURATION_TIME.get(&time_unit[..]).unwrap() * duration_length;
                 }
                 else {
-                    // Rewing argument if the duration is not specified
-                    args.rewind();
-                }
-                
-                // If the reason was treated as the duration time (or there was no reason)
-                // Set the duration time back to default and change the argument to the reason
-                if args.is_empty() {
                     duration = DEFAULT_WARN_EXPIRATION;
                     args.rewind();
                 }
+                
+                let reason: String;
+                if args.is_empty() {
+                    reason =  String::from("reason not provided");
+                } 
+                else {
+                    reason = String::from(args.rest());
+                }
 
-                let reason: String = String::from(args.rest());
                 let time_stamp: u32 = get_time();
                 let issued_by: String = get_discord_tag(&msg.author);
                 // Warn expiration date (current time + warn duration)
                 let expiration: Option<u32> = Some(time_stamp + duration);
 
                 // Add the warn to the infraction log
-                add_infraction(&user.to_string(), &String::from(INFRACTION_WARN), &reason, &issued_by, &expiration, &time_stamp).await;
+                add_infraction(&user, &String::from(INFRACTION_WARN), &reason, &issued_by, &expiration, &time_stamp).await;
 
                 // Send a message confirming the warn
                 msg.channel_id.say(&ctx.http, &format!("✅ Successfully warned {} for `{}`, expiring on <t:{}:f>", user.mention(), &reason, &expiration.unwrap())).await?;
