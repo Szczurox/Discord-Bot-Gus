@@ -30,8 +30,8 @@ pub async fn add_infraction(user_id: &UserId, infraction_type: &String, reason: 
         .await.expect("Error adding the ban to the infractions log");
 }
 
-// Removes infraction from the database
-pub async fn remove_infraction(id: ObjectId) {
+// Removes infraction from the database using it's ID
+pub async fn remove_infraction_by_id(id: ObjectId) {
     // Get a handle to the database
     let db = get_mongo_db().unwrap();
 
@@ -44,6 +44,20 @@ pub async fn remove_infraction(id: ObjectId) {
         None,
     ).await.expect("Error trying to delete element from the database");
 }
+
+// Removes infraction from the database
+pub async fn remove_infraction(filter: Document) {
+    // Get a handle to the database
+    let db = get_mongo_db().unwrap();
+
+    let collection = db.collection::<Infraction>("infractions");
+    // Remove infraction to the database
+    collection.delete_one(
+        filter, 
+        None,
+    ).await.expect("Error trying to delete element from the database");
+}
+
 
 // Gets multiple infractions from the database
 pub async fn get_infractions(filter: Document) -> Cursor<Infraction> {
@@ -73,22 +87,25 @@ pub async fn update_set_infraction(filter: Document, updated: Document) -> Updat
 }
 
 
-// // Gets one infraction from the database
-// pub async fn get_infraction(filter: Document) -> Option<Infraction> {
-//     // Get a handle to the database
-//    let db = get_mongo_db().unwrap();
+// Gets one infraction from the database
+pub async fn get_infraction(filter: Document) -> Option<Infraction> {
+    // Get a handle to the database
+   let db = get_mongo_db().unwrap();
 
-//    let collection = db.collection::<Infraction>("infractions");
+   let collection = db.collection::<Infraction>("infractions");
 
-//     collection.find_one(
-//         filter,
-//         None,
-//     ).await.expect("Error trying to delete element from the database")
-// }
+    collection.find_one(
+        filter,
+        None,
+    ).await.expect("Error trying to find element")
+}
 
+// Main infraction log loop looking for expirations every 1 second
 pub async fn infraction_expiration_coroutine(http: &Arc<Http>) {
+    // Ticker working every 1 second
     let ticker = Ticker::new(0.., Duration::from_secs(1));
     for _ in ticker {
+        // Get all infractions that has expired
         let mut cursor = get_infractions(doc! { 
             InfractionField::ExpirationDate.as_str(): { 
                 "$ne": null,
@@ -97,22 +114,23 @@ pub async fn infraction_expiration_coroutine(http: &Arc<Http>) {
             }, 
         }).await;
 
+        // Traverse through all expired infractions, remove them from the infraction log and handle expiration events
         while cursor.advance().await.expect("Error: Failed to advance cursor in expiration coroutine") {
             let result = cursor.deserialize_current();
             if !result.is_err() {
                 let infraction: Infraction = result.unwrap();
                 if infraction.infraction_type == INFRACTION_MUTE {
-                    remove_infraction(infraction._id).await;
+                    remove_infraction_by_id(infraction._id).await;
                     remove_role(&http, UserId::from(infraction.offender.parse::<u64>().unwrap()), MUTE_ROLE).await
                         .expect("Error removing a mute from a member after it expired");
                 }
                 if infraction.infraction_type == INFRACTION_BAN {
-                    remove_infraction(infraction._id).await;
+                    remove_infraction_by_id(infraction._id).await;
                     GuildId::from(GUILD_ID).unban(&http, UserId::from(infraction.offender.parse::<u64>().unwrap())).await
                         .expect("Error unbanning a member after the ban expired");
                 }
                 if infraction.infraction_type == INFRACTION_WARN {
-                    remove_infraction(infraction._id).await;
+                    remove_infraction_by_id(infraction._id).await;
                 }
             }
         }

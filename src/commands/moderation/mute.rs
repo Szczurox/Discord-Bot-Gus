@@ -7,10 +7,9 @@ use serenity::prelude::*;
 use crate::constants::config::{MUTE_ROLE};
 use crate::constants::infractions::{INFRACTION_MUTE, InfractionField};
 use crate::utils::errors::{missing_argument, missing_permission, wrong_argument};
-use crate::constants::time::{DURATION_TIME};
 use crate::constants::permissions::PERMISSION_MUTE;
 use crate::utils::infractions::{add_infraction, update_set_infraction, infraction_doc};
-use crate::utils::serenity::{get_discord_tag, add_role, check_role};
+use crate::utils::serenity::{get_discord_tag, add_role, check_role, get_duration_from_args, get_reason_from_args};
 use crate::utils::time::get_time;
 
 // Mute a member of a guild
@@ -34,36 +33,14 @@ pub async fn mute(ctx: &Context, msg: &Message,  mut args: Args) -> CommandResul
             }
             let user: UserId = user_result.unwrap();
 
-            // Get mute duration time from arguments
-            let duration_string: String = args.single::<String>()?;
-            // Get time unit (days, months, years, etc.)
-            let time_unit: String = duration_string.chars().filter(|c| !c.is_digit(10)).collect();
-            let duration: Option<u32>;
+            let duration: Option<u32> = get_duration_from_args(&mut args);
 
-            // Check if the duration is specified
-            if DURATION_TIME.contains_key(&time_unit[..]) {
-                // Get number of time units from the mute duration time string
-                let duration_length_string: String = duration_string.chars().filter(|c| c.is_digit(10)).collect();
-                let duration_length : u32 = duration_length_string.parse::<u32>().unwrap();
-
-                duration = Some(DURATION_TIME.get(&time_unit[..]).unwrap() * duration_length);
-            }
-            else {
-                duration = None;
-                args.rewind();
-            }
+            let reason: String = get_reason_from_args(&mut args);
             
-            let reason: String;
-            // Check if there is an optional argument "reason" 
-            if args.is_empty() {
-                reason = String::from("reason not provided");
-            }
-            else {
-                reason = String::from(args.rest());
-            }
-        
             let time_stamp: u32 = get_time();
+
             let issued_by: String = get_discord_tag(&msg.author);
+            
             let expiration: Option<u32>;
             if duration != None {
                 // Mute end (current time + warn duration)
@@ -72,7 +49,9 @@ pub async fn mute(ctx: &Context, msg: &Message,  mut args: Args) -> CommandResul
                 expiration = None;
             }
 
+            // Check if member is already muted
             if !check_role(&ctx.http, user, MUTE_ROLE).await {
+                // Set mute and add it to the infraction log
                 add_infraction(&user, &String::from(INFRACTION_MUTE), &reason, &issued_by, &expiration, &time_stamp).await;
                 add_role(&ctx.http, user, MUTE_ROLE).await?;
 
@@ -84,6 +63,7 @@ pub async fn mute(ctx: &Context, msg: &Message,  mut args: Args) -> CommandResul
                 }
             }
             else {
+                // Update mute
                 update_set_infraction(doc! { 
                     InfractionField::Offender.as_str(): &user.to_string(),
                     InfractionField::InfractionType.as_str(): &String::from(INFRACTION_MUTE)

@@ -7,7 +7,7 @@ use mongodb::bson::oid::ObjectId;
 
 use crate::utils::errors::{missing_argument, missing_permission, wrong_argument};
 use crate::constants::permissions::PERMISSION_WARN;
-use crate::utils::infractions::remove_infraction;
+use crate::utils::infractions::remove_infraction_by_id;
 
 // Remove an infraction from the infraction log
 // Usage: removewarn [infraction ID]
@@ -28,7 +28,7 @@ pub async fn removewarn(ctx: &Context, msg: &Message,  mut args: Args) -> Comman
                 return Ok(());
             }
             let id = id_result.unwrap();
-            remove_infraction(id).await;
+            remove_infraction_by_id(id).await;
             msg.channel_id.say(&ctx.http, &format!("✅ Successfully removed infraction `{}`", id)).await?;
         }
     } else {

@@ -5,10 +5,10 @@ use serenity::model::prelude::*;
 use serenity::prelude::*;
 
 use crate::constants::config::{MUTE_ROLE};
-use crate::constants::infractions::{INFRACTION_MUTE, Infraction, InfractionField};
+use crate::constants::infractions::{INFRACTION_MUTE, InfractionField};
 use crate::utils::errors::{missing_argument, missing_permission, wrong_argument};
 use crate::constants::permissions::PERMISSION_MUTE;
-use crate::utils::infractions::{remove_infraction, get_infractions};
+use crate::utils::infractions::{remove_infraction};
 use crate::utils::serenity::remove_role;
 
 // Unmute a member of a guild
@@ -33,14 +33,9 @@ pub async fn unmute(ctx: &Context, msg: &Message,  mut args: Args) -> CommandRes
             let user: UserId = user_result.unwrap();
     
             // Remove mute from the infraction log
-            let mut mutes = get_infractions(doc! { 
+            remove_infraction(doc! { 
                 InfractionField::InfractionType.as_str(): &String::from(INFRACTION_MUTE), 
             }).await;
-
-            while mutes.advance().await? {
-                let mute: Infraction = mutes.deserialize_current().unwrap();
-                remove_infraction(mute._id).await;
-            }
 
             remove_role(&ctx.http, user, MUTE_ROLE).await.expect("Error removing mute from member in expiration cooroutine");
 

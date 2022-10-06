@@ -1,13 +1,13 @@
+use mongodb::bson::doc;
 use serenity::framework::standard::macros::command;
 use serenity::framework::standard::{Args, CommandResult};
 use serenity::model::prelude::*;
 use serenity::prelude::*;
 
-use crate::constants::infractions::INFRACTION_BAN;
-use crate::constants::time::DURATION_TIME;
+use crate::constants::infractions::{INFRACTION_BAN, InfractionField};
 use crate::utils::errors::{missing_argument, missing_permission, wrong_argument};
-use crate::utils::infractions::{add_infraction};
-use crate::utils::serenity::{get_discord_tag};
+use crate::utils::infractions::{add_infraction, update_set_infraction, infraction_doc, get_infraction};
+use crate::utils::serenity::{get_discord_tag, get_reason_from_args, get_duration_from_args};
 use crate::utils::time::{get_time};
 use crate::constants::permissions::PERMISSION_BAN;
 
@@ -31,33 +31,9 @@ pub async fn ban(ctx: &Context, msg: &Message,  mut args: Args) -> CommandResult
             }
             let user: UserId = user_result.unwrap();
             
-            // Get mute duration time from arguments
-            let duration_string: String = args.single::<String>()?;
-            // Get time unit (days, months, years, etc.)
-            let time_unit: String = duration_string.chars().filter(|c| !c.is_digit(10)).collect();
-            let duration: Option<u32>;
+            let duration: Option<u32> = get_duration_from_args(&mut args);
 
-            // Check if the duration is specified
-            if DURATION_TIME.contains_key(&time_unit[..]) {
-                // Get number of time units from the mute duration time string
-                let duration_length_string: String = duration_string.chars().filter(|c| c.is_digit(10)).collect();
-                let duration_length : u32 = duration_length_string.parse::<u32>().unwrap();
-
-                duration = Some(DURATION_TIME.get(&time_unit[..]).unwrap() * duration_length);
-            }
-            else {
-                duration = None;
-                args.rewind();
-            }
-
-            let reason: String;
-            // Check if there is an optional argument "reason" 
-            if args.is_empty() {
-                reason = String::from("reason not provided");
-            }
-            else {
-                reason = String::from(args.rest());
-            }
+            let reason: String = get_reason_from_args(&mut args);
 
             let time_stamp: u32 = get_time();
             let expiration: Option<u32>;
@@ -67,22 +43,43 @@ pub async fn ban(ctx: &Context, msg: &Message,  mut args: Args) -> CommandResult
             } else {
                 expiration = None;
             }
-
-            // Ban a member from the guild
-            let result = msg.guild_id.unwrap().ban_with_reason(&ctx.http, user, 0, &reason).await;
-            if !result.is_err() {
-                // Add the ban to the infractions log
-                let issued_by: String = get_discord_tag(&msg.author);
-                add_infraction(&user, &String::from(INFRACTION_BAN), &reason, &issued_by, &expiration, &time_stamp).await;
-                // Send a message confirming the ban
-                if &reason[..] == "reason not provided" {
-                    msg.channel_id.say(&ctx.http, &format!("✅ Successfully banned {}", user.mention())).await?;
-                } 
-                else {
-                    msg.channel_id.say(&ctx.http, &format!("✅ Successfully banned {} for `{}`", user.mention(), &reason)).await?;
+            // Add the ban to the infractions log
+            let issued_by: String = get_discord_tag(&msg.author);
+            let infraction = get_infraction(doc! { 
+                InfractionField::Offender.as_str(): &user.to_string(),
+                InfractionField::InfractionType.as_str(): &String::from(INFRACTION_BAN)
+            }).await;
+            if infraction.is_none() {
+                // Ban a member from the guild
+                let result = msg.guild_id.unwrap().ban_with_reason(&ctx.http, user, 0, &reason).await;
+                if !result.is_err() {
+                    add_infraction(&user, &String::from(INFRACTION_BAN), &reason, &issued_by, &expiration, &time_stamp).await;
+                    // Send a message confirming the ban
+                    if &reason[..] == "reason not provided" {
+                        msg.channel_id.say(&ctx.http, &format!("✅ Successfully banned {}", user.mention())).await?;
+                    } 
+                    else {
+                        msg.channel_id.say(&ctx.http, &format!("✅ Successfully banned {} for `{}`", user.mention(), &reason)).await?;
+                    }
+                } else {
+                    missing_permission(msg, ctx, String::from(PERMISSION_BAN)).await;
                 }
-            } else {
-                missing_permission(msg, ctx, String::from(PERMISSION_BAN)).await;
+            }
+            else {
+                // Update ban
+                update_set_infraction(doc! { 
+                    InfractionField::Offender.as_str(): &user.to_string(),
+                    InfractionField::InfractionType.as_str(): &String::from(INFRACTION_BAN)
+                }, 
+                infraction_doc(&user, &String::from(INFRACTION_BAN), &reason, &issued_by, &expiration, &time_stamp)).await;
+
+                if duration != None {
+                    msg.channel_id.say(&ctx.http, 
+                        &format!("✅ Successfully updated {}'s ban, reason: `{}`, expiring on <t:{}:f>", user.mention(), &reason, &expiration.unwrap())).await?;
+                }
+                else {
+                    msg.channel_id.say(&ctx.http, &format!("✅ Successfully updated {}'s ban, reason: {}, lasting `Forever`", user.mention(), &reason)).await?;
+                }
             }
         }
     } else {
