@@ -13,6 +13,9 @@ mod commands {
         pub mod search;
         pub mod removewarn;
     } 
+    pub mod economy {
+        pub mod start;
+    }
 }
 
 mod utils { 
@@ -21,6 +24,7 @@ mod utils {
     pub mod serenity;
     pub mod time;
     pub mod infractions;
+    pub mod economy;
 }
 
 mod events {
@@ -32,6 +36,7 @@ mod constants {
     pub mod permissions;
     pub mod infractions;
     pub mod config;
+    pub mod economy;
 }
 
 use std::sync::Arc;
@@ -58,6 +63,7 @@ use crate::commands::moderation::unmute::*;
 use crate::commands::moderation::warn::*;
 use crate::commands::moderation::search::*;
 use crate::commands::moderation::removewarn::*;
+use crate::commands::economy::start::*;
 
 use crate::events::event_handler::Handler;
 use crate::utils::mongo::{init_mongo_client, get_mongo_db};
@@ -70,7 +76,7 @@ impl TypeMapKey for ShardManagerContainer {
 
 // Group for client commands
 #[group]
-#[commands(ping, kick, ban, unban, mute, unmute, warn, search, removewarn)]
+#[commands(ping, kick, ban, unban, mute, unmute, warn, search, removewarn, start)]
 struct General;
 
 // Main client function
@@ -98,7 +104,7 @@ async fn serenity(#[shared::Postgres] pool: PgPool) -> shuttle_service::ShuttleS
 
     // Set client info
     let framework: StandardFramework = StandardFramework::new()
-        .configure(|c: &mut Configuration | c.prefix(">"))
+        .configure(|c: &mut Configuration | c.prefix("."))
         .group(&GENERAL_GROUP);
     let intents: GatewayIntents = GatewayIntents::non_privileged() | GatewayIntents::MESSAGE_CONTENT;
     let mut client: Client = Client::builder(token, intents)

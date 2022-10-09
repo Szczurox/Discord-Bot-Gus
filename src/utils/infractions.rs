@@ -42,7 +42,7 @@ pub async fn remove_infraction_by_id(id: ObjectId) {
             InfractionField::ID.as_str(): id
         }, 
         None,
-    ).await.expect("Error trying to delete element from the database");
+    ).await.expect("Error trying to remove infraction  from the database");
 }
 
 // Removes infraction from the database
@@ -55,7 +55,7 @@ pub async fn remove_infraction(filter: Document) {
     collection.delete_one(
         filter, 
         None,
-    ).await.expect("Error trying to delete element from the database");
+    ).await.expect("Error trying to remove infraction from the database");
 }
 
 
@@ -69,7 +69,7 @@ pub async fn get_infractions(filter: Document) -> Cursor<Infraction> {
     collection.find(
         filter,
         None,
-    ).await.expect("Error trying to delete element from the database")
+    ).await.expect("Error trying to get an infraction")
 }
 
 // Update infraction
@@ -83,7 +83,7 @@ pub async fn update_set_infraction(filter: Document, updated: Document) -> Updat
         filter,
         doc!{"$set": updated},
         None,
-    ).await.expect("Error trying to delete element from the database")
+    ).await.expect("Error trying to update an infraction")
 }
 
 
