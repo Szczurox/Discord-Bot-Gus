@@ -81,7 +81,7 @@ impl Money for Lab {
             doc! { 
                 LabField::ID.as_str(): &self._id,
             },
-            doc!{"$set": doc! { LabField::Meth.as_str() : amount }},
+            doc!{"$set": doc! { LabField::Money.as_str() : amount }},
             None,
         ).await.expect("Error trying to update meth");
     }
