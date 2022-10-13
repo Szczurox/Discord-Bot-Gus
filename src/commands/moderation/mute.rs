@@ -6,10 +6,11 @@ use serenity::prelude::*;
 
 use crate::constants::config::{MUTE_ROLE};
 use crate::constants::infractions::{INFRACTION_MUTE, InfractionField};
+use crate::utils::args::{get_reason_from_args, get_duration_from_args};
 use crate::utils::errors::{missing_argument, missing_permission, wrong_argument};
 use crate::constants::permissions::PERMISSION_MUTE;
 use crate::utils::infractions::{add_infraction, update_set_infraction, infraction_doc};
-use crate::utils::serenity::{get_discord_tag, add_role, check_role, get_duration_from_args, get_reason_from_args};
+use crate::utils::serenity::{get_discord_tag, add_role, check_role};
 use crate::utils::time::get_time;
 
 // Mute a member of a guild

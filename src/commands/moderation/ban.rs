@@ -5,9 +5,10 @@ use serenity::model::prelude::*;
 use serenity::prelude::*;
 
 use crate::constants::infractions::{INFRACTION_BAN, InfractionField};
+use crate::utils::args::{get_duration_from_args, get_reason_from_args};
 use crate::utils::errors::{missing_argument, missing_permission, wrong_argument};
 use crate::utils::infractions::{add_infraction, update_set_infraction, infraction_doc, get_infraction};
-use crate::utils::serenity::{get_discord_tag, get_reason_from_args, get_duration_from_args};
+use crate::utils::serenity::{get_discord_tag};
 use crate::utils::time::{get_time};
 use crate::constants::permissions::PERMISSION_BAN;
 

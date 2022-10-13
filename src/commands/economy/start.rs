@@ -17,7 +17,7 @@ pub async fn start(ctx: &Context, msg: &Message,  _: Args) -> CommandResult {
         LabField::UserId.as_str(): &msg.author.id.to_string(),
     }).await;
     if lab.is_none() {
-        lab_setup(&msg.author.id).await;
+        lab_setup(msg.author.id).await;
         let mut embed = CreateEmbed::default();
         embed.colour(0xC4FFFF);
         embed.title("Meth Cooking Adventure, Begin!");

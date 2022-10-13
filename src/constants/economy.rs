@@ -1,5 +1,6 @@
-use mongodb::bson::oid::ObjectId;
+use mongodb::bson::{oid::ObjectId, doc};
 use serde::Deserialize;
+use serenity::async_trait;
 
 // Infraction log element
 #[derive(Debug, Deserialize, Clone)]
@@ -11,6 +12,20 @@ pub struct Lab {
     pub daily_min: i64,
     pub daily_max: i64,
     pub cooking: Option<u32>,
+}
+
+#[async_trait]
+pub trait Money {
+    async fn add_money(&self, amount: &i64);
+    async fn remove_money(&self, amount: &i64);
+    async fn set_money(&self, amount: &i64);
+}
+
+#[async_trait]
+pub trait Meth {
+    async fn add_meth(&self, amount: &i64);
+    async fn remove_meth(&self, amount: &i64);
+    async fn set_meth(&self, amount: &i64);
 }
 
 pub enum LabField {

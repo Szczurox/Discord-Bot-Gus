@@ -5,9 +5,10 @@ use serenity::prelude::*;
 
 use crate::constants::config::DEFAULT_WARN_EXPIRATION;
 use crate::constants::infractions::INFRACTION_WARN;
+use crate::utils::args::get_duration_from_args;
 use crate::utils::errors::{missing_argument, missing_permission, wrong_argument};
 use crate::utils::infractions::{add_infraction};
-use crate::utils::serenity::{get_discord_tag, get_duration_from_args};
+use crate::utils::serenity::{get_discord_tag};
 use crate::utils::time::get_time;
 use crate::constants::permissions::PERMISSION_WARN;
 
